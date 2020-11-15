@@ -58,6 +58,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
+
         mUserInputLocation = (EditText) findViewById(R.id.user_input_location);
         mSearchButton = (Button) findViewById(R.id.search_button);
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
