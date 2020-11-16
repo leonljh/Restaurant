@@ -6,11 +6,15 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
+import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Camera;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -21,18 +25,25 @@ import android.widget.Toast;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
+import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
+import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -43,8 +54,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private FusedLocationProviderClient fusedLocationProviderClient;
     private GoogleMap mMap;
     private EditText mUserInputLocation;
-    //private Button mUserInputLocation;
-    private Button mSearchButton;
+    private Button mSearchButton, mGPSButton;
     private Location lastKnownLocation;
     private static final int DEFAULT_ZOOM = 15;
     private final LatLng defaultLocation = new LatLng(-50, 151.2106085);
@@ -61,14 +71,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mUserInputLocation = (EditText) findViewById(R.id.user_input_location);
         mSearchButton = (Button) findViewById(R.id.search_button);
+        mGPSButton = (Button) findViewById(R.id.current_locator);
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        Log.i("Device Location Found","Check");
-
         mSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -76,20 +85,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-//        mUserInputLocation.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//
-//                // Set the fields to specify which types of place data to
-//                // return after the user has made a selection.
-//                List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME);
-//
-//                // Start the autocomplete intent.
-//                Intent intent = new Autocomplete.IntentBuilder(AutocompleteActivityMode.FULLSCREEN, fields)
-//                        .build(getApplicationContext());
-//                startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
-//            }
-//        });
+        mGPSButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getDeviceLocation();
+            }
+        });
     }
 
     /**
@@ -106,7 +107,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         this.mMap = googleMap;
         updateLocationUI();
-        getDeviceLocation();
     }
 
     private void getLocationPermission() {
@@ -149,7 +149,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 lastKnownLocation = null;
                 getLocationPermission();
             }
-        } catch (SecurityException e)  {
+        } catch (SecurityException e) {
             Log.e("Exception: %s", e.getMessage());
         }
     }
@@ -170,7 +170,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
                                         new LatLng(lastKnownLocation.getLatitude(),
                                                 lastKnownLocation.getLongitude()), DEFAULT_ZOOM));
-                                Log.i("Location", lastKnownLocation.toString());
+                                LatLng location = new LatLng(lastKnownLocation.getLatitude(),lastKnownLocation.getLongitude());
+                                mMap.addMarker(new MarkerOptions().position(location).title("You are here!"));
                             }
                         } else {
                             Log.d("MapsActivity", "Current location is null. Using defaults.");
@@ -182,8 +183,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                 });
             }
-        } catch (SecurityException e)  {
+        } catch (SecurityException e) {
             Log.e("Exception: %s", e.getMessage(), e);
+            Toast.makeText(this, "MEGAERROR", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -196,22 +198,50 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Geocoder geocoder = new Geocoder(this);
             try {
                 addressList = geocoder.getFromLocationName(location, 1);
-
             } catch (IOException e) {
-                e.printStackTrace();
+                //To Do
+                //e.printStackTrace();
+                Toast.makeText(this, "is vanguard on? xd", Toast.LENGTH_SHORT).show();
             }
-            if(addressList.size() > 0) {
+
+            if (addressList.size() > 0) {
                 Address address = addressList.get(0);
                 LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
                 mMap.addMarker(new MarkerOptions().position(latLng).title(location));
-                mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
-                Log.i("addresses", address.toString());
-                Toast.makeText(getApplicationContext(), address.getLatitude() + " " + address.getLongitude(), Toast.LENGTH_LONG).show();
-            }
-            else{
+                int zoomLevel = 16;
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel));
+                Toast.makeText(getApplicationContext(), address.toString(), Toast.LENGTH_LONG).show();
+            } else {
                 Toast.makeText(this, "Please Enter Valid Location", Toast.LENGTH_SHORT).show();
             }
+
         }
     }
 
+//    private void fetchLastLocation() {
+//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+//                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//
+//            ActivityCompat.requestPermissions(this,new String[]
+//                    {Manifest.permission.ACCESS_FINE_LOCATION},PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+//            return;
+//        }
+//        Task<Location> task = fusedLocationProviderClient.getLastLocation();
+//        task.addOnSuccessListener(new OnSuccessListener<Location>() {
+//            @Override
+//            public void onSuccess(Location location) {
+//                if(location != null){
+//                    lastKnownLocation = location;
+//                    Toast.makeText(getApplicationContext(),lastKnownLocation.getLatitude() + "" + lastKnownLocation.getLongitude(),Toast.LENGTH_SHORT).show();
+//                    SupportMapFragment supportMapFragment = (SupportMapFragment)
+//                            getSupportFragmentManager().findFragmentById(R.id.map);
+//                    supportMapFragment.getMapAsync(MapsActivity.this);
+//                }
+//            }
+//        });
+//    }
+//
+//    private void getCurrentLocation(){
+//        GPSTracker gpsTracker
+//    }
 }
