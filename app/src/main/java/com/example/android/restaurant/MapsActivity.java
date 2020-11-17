@@ -15,6 +15,7 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -54,14 +55,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private FusedLocationProviderClient fusedLocationProviderClient;
     private GoogleMap mMap;
     private EditText mUserInputLocation;
-    private Button mSearchButton, mGPSButton;
-    private Location lastKnownLocation;
+    private Button mSearchButton, mGPSButton, mRestaurantSearchButton;
+    private Location lastKnownLocation, currentLocation;
     private static final int DEFAULT_ZOOM = 15;
     private final LatLng defaultLocation = new LatLng(-50, 151.2106085);
     private boolean locationPermissionGranted;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
-    private static int AUTOCOMPLETE_REQUEST_CODE = 1;
+    static final String EXTRA_URL_KEY = "extra_url_key";
 
+    //TODO Implement if user searches for restaurant with edit text view empty
+    //TODO Handle where user phone location is not on
+    //TODO use restaurantactivity to parse JSON file and display in recycler view
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,12 +76,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mUserInputLocation = (EditText) findViewById(R.id.user_input_location);
         mSearchButton = (Button) findViewById(R.id.search_button);
         mGPSButton = (Button) findViewById(R.id.current_locator);
+        mRestaurantSearchButton = (Button) findViewById(R.id.search_restaurants);
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
         mSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -91,17 +97,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 getDeviceLocation();
             }
         });
-    }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
+        mRestaurantSearchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                    String myUrl = getUrl();
+                    //pass myUrl thru intent to next activity
+                    Intent restaurantsIntent = new Intent(getApplicationContext(), RestaurantsActivity.class);
+                    restaurantsIntent.putExtra(EXTRA_URL_KEY,myUrl);
+                    startActivity(restaurantsIntent);
+            }
+        });
+    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -154,9 +161,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-
+    //Uses fusedLocationProviderClient to get current location of the device and zooms camera to current location
     private void getDeviceLocation() {
-
         try {
             if (locationPermissionGranted) {
                 Task<Location> locationResult = fusedLocationProviderClient.getLastLocation();
@@ -166,6 +172,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         if (task.isSuccessful()) {
                             // Set the map's camera position to the current location of the device.
                             lastKnownLocation = task.getResult();
+                            Log.i("Search Restaurant", lastKnownLocation.toString());
                             if (lastKnownLocation != null) {
                                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
                                         new LatLng(lastKnownLocation.getLatitude(),
@@ -185,10 +192,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         } catch (SecurityException e) {
             Log.e("Exception: %s", e.getMessage(), e);
-            Toast.makeText(this, "MEGAERROR", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please Enter A Location To Start!", Toast.LENGTH_SHORT).show();
         }
     }
 
+    private LatLng getDeviceLocationForRestaurant() {
+        String location = mUserInputLocation.getText().toString();
+        List<Address> addressList = null;
+
+        if (location != null || !location.equals("")) {
+            Geocoder geocoder = new Geocoder(this);
+            try {
+                addressList = geocoder.getFromLocationName(location, 1);
+            } catch (IOException e) {
+                Toast.makeText(this, "Where are you?", Toast.LENGTH_SHORT).show();
+            }
+
+            if (addressList != null &&addressList.size() > 0) {
+                Address address = addressList.get(0);
+                LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
+                Toast.makeText(getApplicationContext(), address.toString(), Toast.LENGTH_LONG).show();
+                return latLng;
+            } else {
+                Toast.makeText(this, "Please Enter Valid Location", Toast.LENGTH_SHORT).show();
+                return null;
+            }
+        }
+        return null;
+    }
+
+
+    //Searches for location by getting user input from EditText and Geocoder once search button is pressed
     public void searchLocation(View view) {
 
         String location = mUserInputLocation.getText().toString();
@@ -199,49 +233,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             try {
                 addressList = geocoder.getFromLocationName(location, 1);
             } catch (IOException e) {
-                //To Do
-                //e.printStackTrace();
-                Toast.makeText(this, "is vanguard on? xd", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Where are you?", Toast.LENGTH_SHORT).show();
             }
 
-            if (addressList.size() > 0) {
+            if (addressList != null &&addressList.size() > 0) {
                 Address address = addressList.get(0);
                 LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
-                mMap.addMarker(new MarkerOptions().position(latLng).title(location));
+                mMap.addMarker(new MarkerOptions().position(latLng).title("Eating Around Here?"));
                 int zoomLevel = 16;
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel));
-                Toast.makeText(getApplicationContext(), address.toString(), Toast.LENGTH_LONG).show();
             } else {
                 Toast.makeText(this, "Please Enter Valid Location", Toast.LENGTH_SHORT).show();
             }
-
         }
     }
 
-//    private void fetchLastLocation() {
-//        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-//                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//
-//            ActivityCompat.requestPermissions(this,new String[]
-//                    {Manifest.permission.ACCESS_FINE_LOCATION},PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
-//            return;
-//        }
-//        Task<Location> task = fusedLocationProviderClient.getLastLocation();
-//        task.addOnSuccessListener(new OnSuccessListener<Location>() {
-//            @Override
-//            public void onSuccess(Location location) {
-//                if(location != null){
-//                    lastKnownLocation = location;
-//                    Toast.makeText(getApplicationContext(),lastKnownLocation.getLatitude() + "" + lastKnownLocation.getLongitude(),Toast.LENGTH_SHORT).show();
-//                    SupportMapFragment supportMapFragment = (SupportMapFragment)
-//                            getSupportFragmentManager().findFragmentById(R.id.map);
-//                    supportMapFragment.getMapAsync(MapsActivity.this);
-//                }
-//            }
-//        });
-//    }
-//
-//    private void getCurrentLocation(){
-//        GPSTracker gpsTracker
-//    }
+    private String getUrl(){
+
+            LatLng newLatLng = getDeviceLocationForRestaurant();
+            //uri builder to build uri with just location, radius 1.2km radius
+            Uri.Builder builder = new Uri.Builder();
+            builder.scheme("https")
+                    .authority("maps.googleapis.com")
+                    .appendPath("maps")
+                    .appendPath("api")
+                    .appendPath("place")
+                    .appendPath("nearbysearch")
+                    .appendPath("json")
+                    .appendQueryParameter("location", newLatLng.latitude + "," + newLatLng.longitude)
+                    .appendQueryParameter("radius", "1500")
+                    .appendQueryParameter("type", "restaurant")
+                    .appendQueryParameter("key", getResources().getString(R.string.google_maps_key));
+
+            String myUrl = builder.build().toString();
+            return myUrl;
+    }
 }
