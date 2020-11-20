@@ -65,7 +65,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     //TODO Implement if user searches for restaurant with edit text view empty
     //TODO Handle where user phone location is not on
-    //TODO use restaurantactivity to parse JSON file and display in recycler view
+    //TODO Update RecyclerView to show more data
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -172,7 +172,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         if (task.isSuccessful()) {
                             // Set the map's camera position to the current location of the device.
                             lastKnownLocation = task.getResult();
-                            Log.i("Search Restaurant", lastKnownLocation.toString());
                             if (lastKnownLocation != null) {
                                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
                                         new LatLng(lastKnownLocation.getLatitude(),

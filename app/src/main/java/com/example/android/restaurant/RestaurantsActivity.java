@@ -1,10 +1,14 @@
 package com.example.android.restaurant;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.widget.ContentLoadingProgressBar;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 
 import com.example.android.restaurant.model.Restaurant;
 import com.google.gson.JsonArray;
@@ -16,6 +20,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -30,29 +35,48 @@ public class RestaurantsActivity extends AppCompatActivity {
     private String jsonString;
     private JSONObject jsonObject;
     private List<Restaurant> listOfRestaurant;
+    private RecyclerView mRecyclerView;
+    private ContentLoadingProgressBar contentLoadingProgressBar;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_restaurants);
+        mRecyclerView = (RecyclerView) findViewById(R.id.restaurant_recycler_view);
+        contentLoadingProgressBar = (ContentLoadingProgressBar) findViewById(R.id.finding_restaurants);
+        listOfRestaurant = new ArrayList<>();
 
         //Getting myUrl string from previous activity
         Intent intent = getIntent();
         if (intent.hasExtra(MapsActivity.EXTRA_URL_KEY)) {
             myUrl = intent.getStringExtra(MapsActivity.EXTRA_URL_KEY);
-            Log.i("URL", myUrl);
+            setLoadingScreen();
             getJson(myUrl);
 
             Log.i("Restaurants Activity", myUrl);
+
         } else {
             Log.i("Restaurants Activity", "None Found");
         }
+
+        //create layout manager for recyclerview
+        LinearLayoutManager layoutManager
+                = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+        mRecyclerView.setLayoutManager(layoutManager);
+
+        //ensure recycler view has fixed size regardless of content
+        mRecyclerView.setHasFixedSize(true);
+
+        //pass in listOfRestaurants from JSON file as argument
+        RestaurantAdapter restaurantAdapter = new RestaurantAdapter(listOfRestaurant);
+
+        mRecyclerView.setAdapter(restaurantAdapter);
+
     }
 
     private void getJson(String urlString) {
         //get JSON file from URL for parsing
-
         com.example.android.todolist.AppExecutors.getInstance().networkIO().execute(new Runnable() {
             @Override
             public void run() {
@@ -63,7 +87,6 @@ public class RestaurantsActivity extends AppCompatActivity {
 
                     con.connect();
 
-
                     BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
                     StringBuilder sb = new StringBuilder();
                     String line;
@@ -73,11 +96,9 @@ public class RestaurantsActivity extends AppCompatActivity {
                     }
                     br.close();
                     jsonString = sb.toString();
-                    listOfRestaurant = new ArrayList<>();
 
                     try {
                         jsonObject = new JSONObject(jsonString);
-
                         JSONArray arr = jsonObject.getJSONArray("results");
 
                         for (int i=0; i < arr.length(); i++) {
@@ -105,7 +126,18 @@ public class RestaurantsActivity extends AppCompatActivity {
                             listOfRestaurant.add(restaurant);
                         }
 
-                        Log.i("Restaurant", listOfRestaurant.toString());
+                        Log.i("Restaurant List Success", listOfRestaurant.toString());
+
+
+                        //Log success, then open recyclerview
+                        runOnUiThread(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                setmRecyclerView();
+                                mRecyclerView.getAdapter().notifyItemRangeInserted(0, listOfRestaurant.size()-1);
+                            }
+                        });
 
                     } catch (JSONException j){
                         j.printStackTrace();
@@ -129,4 +161,15 @@ public class RestaurantsActivity extends AppCompatActivity {
             });
         }
 
+        //while getting http request and parsing JSON, show loading bar
+        public void setLoadingScreen(){
+            contentLoadingProgressBar.show();
+            mRecyclerView.setVisibility(View.INVISIBLE);
+        }
+
+        //when JSON is parsed and ready, load back to recyclerview. this prevents the myRestaurants list from becoming null
+        public void setmRecyclerView(){
+            contentLoadingProgressBar.hide();
+            mRecyclerView.setVisibility(View.VISIBLE);
+        }
     }
