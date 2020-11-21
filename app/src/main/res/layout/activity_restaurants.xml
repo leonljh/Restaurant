@@ -6,6 +6,15 @@
     android:layout_height="match_parent"
     tools:context=".RestaurantsActivity">
 
+    <Button
+        android:id="@+id/button_random"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/i_anything_one"
+        app:layout_constraintBottom_toTopOf="@+id/restaurant_recycler_view"
+        app:layout_constraintStart_toStartOf="@+id/restaurant_recycler_view"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/restaurant_recycler_view"
         android:layout_width="0dp"
@@ -13,7 +22,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/button_random" />
 
     <androidx.core.widget.ContentLoadingProgressBar
         android:id="@+id/finding_restaurants"

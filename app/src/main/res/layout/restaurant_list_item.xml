@@ -10,7 +10,6 @@
         android:layout_height="wrap_content"
         android:id="@+id/restaurant_id_num"
         tools:text="Preview"
-        android:textSize="30dp"
-        />
+        android:textSize="20dp" />
 
 </FrameLayout>

@@ -62,10 +62,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private boolean locationPermissionGranted;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     static final String EXTRA_URL_KEY = "extra_url_key";
-
-    //TODO Implement if user searches for restaurant with edit text view empty
-    //TODO Handle where user phone location is not on
-    //TODO Update RecyclerView to show more data
+//
+//    TODO Implement if user searches for restaurant with edit text view empty
+//    TODO Handle where user phone location is not on
+//    TODO Update RecyclerView to show more data
+//    TODO use pagetoken to get next 20 results, up to 60
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

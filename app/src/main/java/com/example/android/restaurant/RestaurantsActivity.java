@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 
 import com.example.android.restaurant.model.Restaurant;
 import com.google.gson.JsonArray;
@@ -33,6 +34,7 @@ public class RestaurantsActivity extends AppCompatActivity {
 
     private String myUrl;
     private String jsonString;
+    private Button randomizeButton;
     private JSONObject jsonObject;
     private List<Restaurant> listOfRestaurant;
     private RecyclerView mRecyclerView;
@@ -45,6 +47,7 @@ public class RestaurantsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_restaurants);
         mRecyclerView = (RecyclerView) findViewById(R.id.restaurant_recycler_view);
         contentLoadingProgressBar = (ContentLoadingProgressBar) findViewById(R.id.finding_restaurants);
+        randomizeButton = (Button) findViewById(R.id.button_random);
         listOfRestaurant = new ArrayList<>();
 
         //Getting myUrl string from previous activity
@@ -72,6 +75,13 @@ public class RestaurantsActivity extends AppCompatActivity {
         RestaurantAdapter restaurantAdapter = new RestaurantAdapter(listOfRestaurant);
 
         mRecyclerView.setAdapter(restaurantAdapter);
+
+        randomizeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.i("Button Test", "Hello World");
+            }
+        });
 
     }
 
