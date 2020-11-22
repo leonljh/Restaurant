@@ -213,7 +213,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (addressList != null &&addressList.size() > 0) {
                 Address address = addressList.get(0);
                 LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
-                Toast.makeText(getApplicationContext(), address.toString(), Toast.LENGTH_LONG).show();
+               // Toast.makeText(getApplicationContext(), address.toString(), Toast.LENGTH_LONG).show();
                 return latLng;
             } else {
                 Toast.makeText(this, "Please Enter Valid Location", Toast.LENGTH_SHORT).show();

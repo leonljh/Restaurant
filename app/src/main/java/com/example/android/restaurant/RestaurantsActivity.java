@@ -36,6 +36,7 @@ public class RestaurantsActivity extends AppCompatActivity {
 
     private String myUrl;
     private String jsonString;
+    private String randomResultantRestaurant;
     private Button randomizeButton;
     private JSONObject jsonObject;
     private List<Restaurant> listOfRestaurant;
@@ -82,7 +83,8 @@ public class RestaurantsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 randomiseMyMealPlease();
-                Log.i("Button Test", "Button Pressed");
+                    ResultsFragment resultsFragment = new ResultsFragment(randomResultantRestaurant);
+                    resultsFragment.show(getSupportFragmentManager(),"My Fragment");
             }
         });
 
@@ -193,7 +195,7 @@ public class RestaurantsActivity extends AppCompatActivity {
             int max = listOfRestaurant.size() - 1;
 
             int randomRestaurantId = random.nextInt(max);
-            String randomResultantRestaurant = listOfRestaurant.get(randomRestaurantId).getName();
-            Toast.makeText(this, "Let's eat at: " + randomResultantRestaurant, Toast.LENGTH_LONG).show();
+            randomResultantRestaurant = listOfRestaurant.get(randomRestaurantId).getName();
+            //Toast.makeText(this, "Let's eat at: " + randomResultantRestaurant, Toast.LENGTH_LONG).show();
         }
     }
