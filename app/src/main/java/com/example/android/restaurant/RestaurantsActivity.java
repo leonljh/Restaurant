@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.example.android.restaurant.model.Restaurant;
 import com.google.gson.JsonArray;
@@ -27,6 +28,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -79,7 +81,8 @@ public class RestaurantsActivity extends AppCompatActivity {
         randomizeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.i("Button Test", "Hello World");
+                randomiseMyMealPlease();
+                Log.i("Button Test", "Button Pressed");
             }
         });
 
@@ -181,5 +184,16 @@ public class RestaurantsActivity extends AppCompatActivity {
         public void setmRecyclerView(){
             contentLoadingProgressBar.hide();
             mRecyclerView.setVisibility(View.VISIBLE);
+        }
+
+        //gets a random int and passes it into the listOfRestaurant. Producing a toast of the restaurant
+        private void randomiseMyMealPlease(){
+            Random random = new Random();
+
+            int max = listOfRestaurant.size() - 1;
+
+            int randomRestaurantId = random.nextInt(max);
+            String randomResultantRestaurant = listOfRestaurant.get(randomRestaurantId).getName();
+            Toast.makeText(this, "Let's eat at: " + randomResultantRestaurant, Toast.LENGTH_LONG).show();
         }
     }
