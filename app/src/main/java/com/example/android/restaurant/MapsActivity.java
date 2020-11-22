@@ -56,19 +56,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleMap mMap;
     private EditText mUserInputLocation;
     private Button mSearchButton, mGPSButton, mRestaurantSearchButton;
-    private Location lastKnownLocation, currentLocation;
+    private Location lastKnownLocation;
     private static final int DEFAULT_ZOOM = 15;
     private final LatLng defaultLocation = new LatLng(-50, 151.2106085);
     private boolean locationPermissionGranted;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     static final String EXTRA_URL_KEY = "extra_url_key";
 
-//    TODO Implement if user searches for restaurant with edit text view empty
 //    TODO Handle where user phone location is not on
 //    TODO use pagetoken to get next 20 results, up to 60
 //    TODO Autocomplete implementation on search bar
-//    TODO Get current location and put into EditText feature
-//    TODO make randomize button work
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +84,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        //Searches for location and moves marker and map to location
         mSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -94,6 +92,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+        //find current location where user is at
         mGPSButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -101,6 +100,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+        //searches for restaurants in the area
         mRestaurantSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -202,7 +202,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         String location = mUserInputLocation.getText().toString();
         List<Address> addressList = null;
 
-        if (location != null || !location.equals("")) {
+        if (!location.equals("")) {
             Geocoder geocoder = new Geocoder(this);
             try {
                 addressList = geocoder.getFromLocationName(location, 1);
@@ -210,7 +210,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Toast.makeText(this, "Where are you?", Toast.LENGTH_SHORT).show();
             }
 
-            if (addressList != null &&addressList.size() > 0) {
+            if (addressList != null && addressList.size() > 0) {
                 Address address = addressList.get(0);
                 LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
                // Toast.makeText(getApplicationContext(), address.toString(), Toast.LENGTH_LONG).show();
@@ -219,14 +219,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Toast.makeText(this, "Please Enter Valid Location", Toast.LENGTH_SHORT).show();
                 return null;
             }
+        } else{
+            LatLng locationNow = new LatLng(lastKnownLocation.getLatitude(),lastKnownLocation.getLongitude());
+            Log.i("LocationNow", locationNow.toString());
+            return locationNow;
         }
-        return null;
     }
 
 
     //Searches for location by getting user input from EditText and Geocoder once search button is pressed
     public void searchLocation(View view) {
-
         String location = mUserInputLocation.getText().toString();
         List<Address> addressList = null;
 
@@ -251,7 +253,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private String getUrl(){
-
             LatLng newLatLng = getDeviceLocationForRestaurant();
             //uri builder to build uri with just location, radius 1.2km radius
             Uri.Builder builder = new Uri.Builder();
