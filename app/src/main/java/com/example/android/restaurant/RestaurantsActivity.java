@@ -2,14 +2,22 @@ package com.example.android.restaurant;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.widget.ContentLoadingProgressBar;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.android.restaurant.model.Restaurant;
@@ -36,6 +44,7 @@ public class RestaurantsActivity extends AppCompatActivity {
 
     private String myUrl;
     private String jsonString;
+    private String resultRestaurant;
     private Button randomizeButton;
     private JSONObject jsonObject;
     private List<Restaurant> listOfRestaurant;
@@ -82,6 +91,30 @@ public class RestaurantsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 randomiseMyMealPlease();
+
+                // inflates the layout of the popup window
+                LayoutInflater inflater = (LayoutInflater)
+                        getSystemService(LAYOUT_INFLATER_SERVICE);
+                View popupView = inflater.inflate(R.layout.pop_up_restaurant, null);
+
+                // create the popup window
+                int width = LinearLayout.LayoutParams.WRAP_CONTENT;
+                int height = LinearLayout.LayoutParams.WRAP_CONTENT;
+                boolean focusable = true; // lets taps outside the popup also dismiss it
+                final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
+                ((TextView)popupWindow.getContentView().findViewById(R.id.resultant_restaurant)).setText(resultRestaurant);
+                // show the popup window
+                // which view you pass in doesn't matter, it is only used for the window token
+                popupWindow.showAtLocation(v, Gravity.CENTER, 0, 0);
+
+                // dismiss the popup window when touched
+                popupView.setOnTouchListener(new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        popupWindow.dismiss();
+                        return true;
+                    }
+                });
                 Log.i("Button Test", "Button Pressed");
             }
         });
@@ -193,7 +226,7 @@ public class RestaurantsActivity extends AppCompatActivity {
             int max = listOfRestaurant.size() - 1;
 
             int randomRestaurantId = random.nextInt(max);
-            String randomResultantRestaurant = listOfRestaurant.get(randomRestaurantId).getName();
-            Toast.makeText(this, "Let's eat at: " + randomResultantRestaurant, Toast.LENGTH_LONG).show();
+            resultRestaurant = listOfRestaurant.get(randomRestaurantId).getName();
+            Toast.makeText(this, "Let's eat at: " + resultRestaurant, Toast.LENGTH_LONG).show();
         }
     }
