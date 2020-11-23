@@ -37,6 +37,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
@@ -45,6 +46,7 @@ import com.google.android.libraries.places.widget.listener.PlaceSelectionListene
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -54,10 +56,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private FusedLocationProviderClient fusedLocationProviderClient;
     private GoogleMap mMap;
-    private EditText mUserInputLocation;
-    private Button mSearchButton, mGPSButton, mRestaurantSearchButton;
+    private Button mGPSButton, mRestaurantSearchButton;
     private Location lastKnownLocation;
+    private String autoCompleteSearchedLocation;
     private static final int DEFAULT_ZOOM = 15;
+    private LatLng currentLocationLatLng;
     private final LatLng defaultLocation = new LatLng(-50, 151.2106085);
     private boolean locationPermissionGranted;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
@@ -72,9 +75,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
-
-        mUserInputLocation = (EditText) findViewById(R.id.user_input_location);
-        mSearchButton = (Button) findViewById(R.id.search_button);
         mGPSButton = (Button) findViewById(R.id.current_locator);
         mRestaurantSearchButton = (Button) findViewById(R.id.search_restaurants);
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
@@ -84,11 +84,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        //Searches for location and moves marker and map to location
-        mSearchButton.setOnClickListener(new View.OnClickListener() {
+        //Creates AutocompleteFragment
+        AutocompleteSupportFragment autocompleteSupportFragment = (AutocompleteSupportFragment)
+                getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
+
+        //Initializes Places before using API
+        Places.initialize(getApplicationContext(),getString(R.string.maps_api_key));
+        autocompleteSupportFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
+
+        autocompleteSupportFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
-            public void onClick(View v) {
-                searchLocation(v);
+            public void onPlaceSelected(@NotNull Place place) {
+                autoCompleteSearchedLocation = place.getName();
+                getUrl();
+                searchLocation();
+                Log.i("Fragment Working", "Place: " + place.getName() + ", " + place.getId());
+            }
+
+            @Override
+            public void onError(@NotNull Status status) {
+                Log.i("Fragment At Work", "An error occurred: " + status);
             }
         });
 
@@ -166,6 +181,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     //Uses fusedLocationProviderClient to get current location of the device and zooms camera to current location
     private void getDeviceLocation() {
+        //needs to reset autoCompleteLocation on method call
         try {
             if (locationPermissionGranted) {
                 Task<Location> locationResult = fusedLocationProviderClient.getLastLocation();
@@ -180,6 +196,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                         new LatLng(lastKnownLocation.getLatitude(),
                                                 lastKnownLocation.getLongitude()), DEFAULT_ZOOM));
                                 LatLng location = new LatLng(lastKnownLocation.getLatitude(),lastKnownLocation.getLongitude());
+                                Log.i("Current Location Check", location.toString());
+
+                                Geocoder geocoder = new Geocoder(getApplicationContext());
+                                try {
+                                    List<Address> addresses = geocoder.getFromLocation(lastKnownLocation.getLatitude(),lastKnownLocation.getLongitude(),1);
+                                    autoCompleteSearchedLocation = addresses.get(0).getPostalCode();
+                                    Log.i("Autocomplete Test", autoCompleteSearchedLocation);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                                 mMap.addMarker(new MarkerOptions().position(location).title("You are here!"));
                             }
                         } else {
@@ -198,11 +224,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+
     private LatLng getDeviceLocationForRestaurant() {
-        String location = mUserInputLocation.getText().toString();
+
+        String location = autoCompleteSearchedLocation;
         List<Address> addressList = null;
 
         if (!location.equals("")) {
+            Log.i("Geocoder Test", "Im here");
             Geocoder geocoder = new Geocoder(this);
             try {
                 addressList = geocoder.getFromLocationName(location, 1);
@@ -213,7 +242,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (addressList != null && addressList.size() > 0) {
                 Address address = addressList.get(0);
                 LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
-               // Toast.makeText(getApplicationContext(), address.toString(), Toast.LENGTH_LONG).show();
                 return latLng;
             } else {
                 Toast.makeText(this, "Please Enter Valid Location", Toast.LENGTH_SHORT).show();
@@ -228,8 +256,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     //Searches for location by getting user input from EditText and Geocoder once search button is pressed
-    public void searchLocation(View view) {
-        String location = mUserInputLocation.getText().toString();
+    public void searchLocation() {
+
+        String location = autoCompleteSearchedLocation;
         List<Address> addressList = null;
 
         if (location != null || !location.equals("")) {
@@ -253,6 +282,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private String getUrl(){
+            Log.i("Entering getUrl method", "getting Url");
             LatLng newLatLng = getDeviceLocationForRestaurant();
             //uri builder to build uri with just location, radius 1.2km radius
             Uri.Builder builder = new Uri.Builder();

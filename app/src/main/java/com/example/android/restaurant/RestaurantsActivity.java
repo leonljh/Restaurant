@@ -70,13 +70,10 @@ public class RestaurantsActivity extends AppCompatActivity {
         LinearLayoutManager layoutManager
                 = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         mRecyclerView.setLayoutManager(layoutManager);
-
         //ensure recycler view has fixed size regardless of content
         mRecyclerView.setHasFixedSize(true);
-
         //pass in listOfRestaurants from JSON file as argument
         RestaurantAdapter restaurantAdapter = new RestaurantAdapter(listOfRestaurant);
-
         mRecyclerView.setAdapter(restaurantAdapter);
 
         randomizeButton.setOnClickListener(new View.OnClickListener() {

@@ -6,6 +6,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
+
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -28,7 +30,6 @@
             android:paddingBottom="32dp"
             android:textColor="@color/black" />
 
-
     </FrameLayout>
 
     <Button
@@ -38,25 +39,27 @@
         android:layout_gravity="bottom"
         android:text="Search Restaurants" />
 
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_gravity="bottom">
 
-        <EditText
-            android:id="@+id/user_input_location"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:hint="Search Area"
-            android:layout_weight="0.9"/>
+        <fragment android:id="@+id/autocomplete_fragment"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:name="com.google.android.libraries.places.widget.AutocompleteSupportFragment"
+            android:layout_weight="0.9"
+            />
 
+<!--        <Button-->
+<!--            android:id="@+id/search_button"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_weight="0.1"-->
+<!--            android:text="Search" />-->
 
-        <Button
-            android:id="@+id/search_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.1"
-            android:text="Search!"/>
     </LinearLayout>
 
 
