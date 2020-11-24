@@ -38,7 +38,9 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.model.AutocompleteSessionToken;
 import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
@@ -60,9 +62,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Location lastKnownLocation;
     private String autoCompleteSearchedLocation;
     private static final int DEFAULT_ZOOM = 15;
-    private LatLng currentLocationLatLng;
     private final LatLng defaultLocation = new LatLng(-50, 151.2106085);
-    private boolean locationPermissionGranted;
+    public boolean locationPermissionGranted;
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     static final String EXTRA_URL_KEY = "extra_url_key";
 
@@ -90,6 +91,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         //Initializes Places before using API
         Places.initialize(getApplicationContext(),getString(R.string.maps_api_key));
+
+        //Set autocomplete searches to only Singapore
+        autocompleteSupportFragment.setCountries("SG");
         autocompleteSupportFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
 
         autocompleteSupportFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
@@ -299,6 +303,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .appendQueryParameter("key", getResources().getString(R.string.google_maps_key));
 
             String myUrl = builder.build().toString();
+        Log.i("Entering getUrl method", myUrl);
             return myUrl;
     }
+
 }

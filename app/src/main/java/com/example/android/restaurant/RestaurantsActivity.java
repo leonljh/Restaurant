@@ -36,12 +36,14 @@ public class RestaurantsActivity extends AppCompatActivity {
 
     private String myUrl;
     private String jsonString;
-    private String randomResultantRestaurant;
+    private String randomResultantRestaurant, randomResultantRestaurantId;
     private Button randomizeButton;
     private JSONObject jsonObject;
     private List<Restaurant> listOfRestaurant;
     private RecyclerView mRecyclerView;
     private ContentLoadingProgressBar contentLoadingProgressBar;
+    static final String RESTAURANT_ID_KEY = "restaurant_id_key";
+    static final String RESTAURANT_NAME_KEY = "restaurant_name_key";
 
 
     @Override
@@ -80,7 +82,11 @@ public class RestaurantsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 randomiseMyMealPlease();
-                    ResultsFragment resultsFragment = new ResultsFragment(randomResultantRestaurant);
+                    ResultsFragment resultsFragment = new ResultsFragment();
+                    Bundle args = new Bundle();
+                    args.putString(RESTAURANT_ID_KEY,randomResultantRestaurantId);
+                    args.putString(RESTAURANT_NAME_KEY,randomResultantRestaurant);
+                    resultsFragment.setArguments(args);
                     resultsFragment.show(getSupportFragmentManager(),"My Fragment");
             }
         });
@@ -133,8 +139,13 @@ public class RestaurantsActivity extends AppCompatActivity {
                                 restaurantPrice = res.getInt("price_level");
                             }
 
+                            String restaurantId = "";
+                            if(res.has("place_id")){
+                                restaurantId = res.getString("place_id");
+                            }
+
                             Restaurant restaurant = new Restaurant(restaurantName, restaurantRating,
-                                    restaurantUserRatings, restaurantPrice);
+                                    restaurantUserRatings, restaurantPrice, restaurantId);
                             listOfRestaurant.add(restaurant);
                         }
 
@@ -186,13 +197,15 @@ public class RestaurantsActivity extends AppCompatActivity {
         }
 
         //gets a random int and passes it into the listOfRestaurant. Producing a toast of the restaurant
-        private void randomiseMyMealPlease(){
+        public void randomiseMyMealPlease(){
             Random random = new Random();
 
             int max = listOfRestaurant.size() - 1;
 
             int randomRestaurantId = random.nextInt(max);
             randomResultantRestaurant = listOfRestaurant.get(randomRestaurantId).getName();
-            //Toast.makeText(this, "Let's eat at: " + randomResultantRestaurant, Toast.LENGTH_LONG).show();
+            randomResultantRestaurantId = listOfRestaurant.get(randomRestaurantId).getRestaurantId();
+
+            Log.i("RestaurantFrag", randomResultantRestaurantId.toString() + randomResultantRestaurant);
         }
     }
