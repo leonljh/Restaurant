@@ -2,6 +2,7 @@ package com.example.android.restaurant;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.widget.ContentLoadingProgressBar;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -55,6 +56,10 @@ public class RestaurantsActivity extends AppCompatActivity {
         randomizeButton = (Button) findViewById(R.id.button_random);
         listOfRestaurant = new ArrayList<>();
 
+        //setup viewmodel in this activity to pass data between fragment and activity
+        ViewModelProviders.of(this).get(RestaurantViewModel.class);
+
+
         //Getting myUrl string from previous activity
         Intent intent = getIntent();
         if (intent.hasExtra(MapsActivity.EXTRA_URL_KEY)) {
@@ -83,6 +88,9 @@ public class RestaurantsActivity extends AppCompatActivity {
             public void onClick(View v) {
                 randomiseMyMealPlease();
                     ResultsFragment resultsFragment = new ResultsFragment();
+                    //passes in the restaurant_Place_ID and the restaurant_Name to the fragment.
+                    //make a method that gets your current location in the recyclerview listener,
+                    //then pass it to the fragment
                     Bundle args = new Bundle();
                     args.putString(RESTAURANT_ID_KEY,randomResultantRestaurantId);
                     args.putString(RESTAURANT_NAME_KEY,randomResultantRestaurant);

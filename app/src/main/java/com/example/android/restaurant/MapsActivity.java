@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.ViewModelProviders;
 
 import android.Manifest;
 import android.content.Context;
@@ -69,7 +70,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 //    TODO Handle where user phone location is not on
 //    TODO use pagetoken to get next 20 results, up to 60
-//    TODO Autocomplete implementation on search bar
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +79,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mGPSButton = (Button) findViewById(R.id.current_locator);
         mRestaurantSearchButton = (Button) findViewById(R.id.search_restaurants);
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+        //Instantiate ViewModel
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -90,7 +91,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 getSupportFragmentManager().findFragmentById(R.id.autocomplete_fragment);
 
         //Initializes Places before using API
-        Places.initialize(getApplicationContext(),getString(R.string.maps_api_key));
+        Places.initialize(getApplicationContext(), getString(R.string.maps_api_key));
 
         //Set autocomplete searches to only Singapore
         autocompleteSupportFragment.setCountries("SG");
@@ -115,7 +116,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mGPSButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                Log.i("GPSButton", "Working on it...");
                 getDeviceLocation();
+                Log.i("GPSButton", "GPS Success!");
             }
         });
 
@@ -123,11 +127,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mRestaurantSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                    String myUrl = getUrl();
-                    //pass myUrl thru intent to next activity
-                    Intent restaurantsIntent = new Intent(getApplicationContext(), RestaurantsActivity.class);
-                    restaurantsIntent.putExtra(EXTRA_URL_KEY,myUrl);
-                    startActivity(restaurantsIntent);
+                String myUrl = getUrl();
+                //pass myUrl thru intent to next activity
+                Intent restaurantsIntent = new Intent(getApplicationContext(), RestaurantsActivity.class);
+                restaurantsIntent.putExtra(EXTRA_URL_KEY, myUrl);
+                startActivity(restaurantsIntent);
             }
         });
     }
@@ -185,7 +189,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     //Uses fusedLocationProviderClient to get current location of the device and zooms camera to current location
     private void getDeviceLocation() {
-        //needs to reset autoCompleteLocation on method call
         try {
             if (locationPermissionGranted) {
                 Task<Location> locationResult = fusedLocationProviderClient.getLastLocation();
@@ -199,12 +202,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
                                         new LatLng(lastKnownLocation.getLatitude(),
                                                 lastKnownLocation.getLongitude()), DEFAULT_ZOOM));
-                                LatLng location = new LatLng(lastKnownLocation.getLatitude(),lastKnownLocation.getLongitude());
+                                LatLng location = new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
                                 Log.i("Current Location Check", location.toString());
 
+                                //this line of code is for converting LatLng location to an String address based on postal code!!
                                 Geocoder geocoder = new Geocoder(getApplicationContext());
                                 try {
-                                    List<Address> addresses = geocoder.getFromLocation(lastKnownLocation.getLatitude(),lastKnownLocation.getLongitude(),1);
+                                    List<Address> addresses = geocoder.getFromLocation(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude(), 1);
                                     autoCompleteSearchedLocation = addresses.get(0).getPostalCode();
                                     Log.i("Autocomplete Test", autoCompleteSearchedLocation);
                                 } catch (IOException e) {
@@ -251,8 +255,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Toast.makeText(this, "Please Enter Valid Location", Toast.LENGTH_SHORT).show();
                 return null;
             }
-        } else{
-            LatLng locationNow = new LatLng(lastKnownLocation.getLatitude(),lastKnownLocation.getLongitude());
+        } else {
+            LatLng locationNow = new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
             Log.i("LocationNow", locationNow.toString());
             return locationNow;
         }
@@ -273,7 +277,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Toast.makeText(this, "Where are you?", Toast.LENGTH_SHORT).show();
             }
 
-            if (addressList != null &&addressList.size() > 0) {
+            if (addressList != null && addressList.size() > 0) {
                 Address address = addressList.get(0);
                 LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
                 mMap.addMarker(new MarkerOptions().position(latLng).title("Eating Around Here?"));
@@ -285,26 +289,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private String getUrl(){
-            Log.i("Entering getUrl method", "getting Url");
-            LatLng newLatLng = getDeviceLocationForRestaurant();
-            //uri builder to build uri with just location, radius 1.2km radius
-            Uri.Builder builder = new Uri.Builder();
-            builder.scheme("https")
-                    .authority("maps.googleapis.com")
-                    .appendPath("maps")
-                    .appendPath("api")
-                    .appendPath("place")
-                    .appendPath("nearbysearch")
-                    .appendPath("json")
-                    .appendQueryParameter("location", newLatLng.latitude + "," + newLatLng.longitude)
-                    .appendQueryParameter("radius", "1500")
-                    .appendQueryParameter("type", "restaurant")
-                    .appendQueryParameter("key", getResources().getString(R.string.google_maps_key));
+    private String getUrl() {
+        Log.i("Entering getUrl method", "getting Url");
+        LatLng newLatLng = getDeviceLocationForRestaurant();
+        //uri builder to build uri with just location, radius 1.2km radius
+        Uri.Builder builder = new Uri.Builder();
+        builder.scheme("https")
+                .authority("maps.googleapis.com")
+                .appendPath("maps")
+                .appendPath("api")
+                .appendPath("place")
+                .appendPath("nearbysearch")
+                .appendPath("json")
+                .appendQueryParameter("location", newLatLng.latitude + "," + newLatLng.longitude)
+                .appendQueryParameter("radius", "1500")
+                .appendQueryParameter("type", "restaurant")
+                .appendQueryParameter("key", getResources().getString(R.string.google_maps_key));
 
-            String myUrl = builder.build().toString();
+        String myUrl = builder.build().toString();
         Log.i("Entering getUrl method", myUrl);
-            return myUrl;
+        return myUrl;
     }
-
 }
