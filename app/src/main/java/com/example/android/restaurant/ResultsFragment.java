@@ -1,6 +1,7 @@
 package com.example.android.restaurant;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -31,10 +32,9 @@ import java.util.List;
 public class ResultsFragment extends DialogFragment {
 
     private TextView mRestaurantResult;
-    private String randomedRestaurant, randomedRestaurantPlaceId,currentLocationPostalCode, myUrl;
+    private String randomedRestaurant, randomedRestaurantPlaceId, myUrl;
     private Button letsGo, reRoll;
-    private Location currentLocation;
-    private FusedLocationProviderClient fusedLocationProviderClient;
+    private double randomedRestaurantLat, randomedRestaurantLng;
 
     public ResultsFragment() {}
 
@@ -59,10 +59,12 @@ public class ResultsFragment extends DialogFragment {
         letsGo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getCurrentLocationFragment();
-                //set multithread and grab PolyLine from JSON
-                //pass polyline data to mainactivity using RestaurantFactory and close fragment
-                //close restaurantsActivity and set the route in the main fragment
+                //open google maps and set destination.
+                String url = getUrlForJSON();
+                Uri gmmIntentUri = Uri.parse(url);
+                Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                mapIntent.setPackage("com.google.android.apps.maps");
+                startActivity(mapIntent);
             }
         });
 
@@ -72,64 +74,54 @@ public class ResultsFragment extends DialogFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getActivity());
         randomedRestaurantPlaceId = getArguments().getString(RestaurantsActivity.RESTAURANT_ID_KEY);
         randomedRestaurant = getArguments().getString(RestaurantsActivity.RESTAURANT_NAME_KEY);
-        Log.i("Within Fragment", randomedRestaurant + " " + randomedRestaurantPlaceId);
+        randomedRestaurantLat = getArguments().getDouble(RestaurantsActivity.RESTAURANT_LAT);
+        randomedRestaurantLng = getArguments().getDouble(RestaurantsActivity.RESTAURANT_LNG);
+
+        Log.i("Within Fragment", randomedRestaurant + " " + randomedRestaurantPlaceId + " " + randomedRestaurantLat + " " + randomedRestaurantLng );
     }
 
 
     //We have to get the current location from fusedLocationProviderClient as you never know, the user
     //is probably on the move while searching for restaurant.
-    private void getCurrentLocationFragment() {
-        fusedLocationProviderClient = LocationServices
-                .getFusedLocationProviderClient(getActivity());
-        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) !=
-                PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        Task<Location> locationResult =  fusedLocationProviderClient.getLastLocation();
-        locationResult.addOnCompleteListener(getActivity(), new OnCompleteListener<Location>() {
+//    private void getCurrentLocationFragment() {
+//        fusedLocationProviderClient = LocationServices
+//                .getFusedLocationProviderClient(getActivity());
+//        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) !=
+//                PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            return;
+//        }
+//        Task<Location> locationResult =  fusedLocationProviderClient.getLastLocation();
+//        locationResult.addOnCompleteListener(getActivity(), new OnCompleteListener<Location>() {
+//
+//            @Override
+//            public void onComplete(@NonNull Task<Location> task) {
+//                if(task.isSuccessful()) {
+//                    currentLocation = task.getResult();
+//                    if(currentLocation != null){
+//                        LatLng location = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
+//                        Log.i("Fragment Location Chk", location.toString());
+//
+//                        Geocoder geocoder = new Geocoder(getActivity());
+//                        try {
+//                            List<Address> addresses = geocoder.getFromLocation(currentLocation.getLatitude(),currentLocation.getLongitude(),1);
+//                            currentLocationPostalCode = addresses.get(0).getPostalCode();
+//                            Log.i("AutocompleteFrag Test", currentLocationPostalCode);
+//                            getUrlForJSON();
+//                        } catch (IOException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                }
+//            };
+//        });
+//    }
 
-            @Override
-            public void onComplete(@NonNull Task<Location> task) {
-                if(task.isSuccessful()) {
-                    currentLocation = task.getResult();
-                    if(currentLocation != null){
-                        LatLng location = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
-                        Log.i("Fragment Location Chk", location.toString());
-
-                        Geocoder geocoder = new Geocoder(getActivity());
-                        try {
-                            List<Address> addresses = geocoder.getFromLocation(currentLocation.getLatitude(),currentLocation.getLongitude(),1);
-                            currentLocationPostalCode = addresses.get(0).getPostalCode();
-                            Log.i("AutocompleteFrag Test", currentLocationPostalCode);
-                            getUrlForJSON();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            };
-        });
-    }
-
-    private void getUrlForJSON(){
-        Uri.Builder builder = new Uri.Builder();
-        builder.scheme("https")
-                .authority("maps.googleapis.com")
-                .appendPath("maps")
-                .appendPath("api")
-                .appendPath("directions")
-                .appendPath("json")
-                .appendQueryParameter("origin",currentLocation.getLatitude()+","+currentLocation.getLongitude())
-                .appendQueryParameter("destination","place_id:"+randomedRestaurantPlaceId)
-                .appendQueryParameter("mode","walking")
-                .appendQueryParameter("key",getResources().getString(R.string.google_maps_key));
-
-        myUrl = builder.build().toString();
+    private String getUrlForJSON(){
+        //google.navigation:q=latitude,longitude
+        myUrl = "google.navigation:q="+randomedRestaurantLat+","+randomedRestaurantLng+"&mode=w";
         Log.i("Fragment URL", myUrl);
-
+        return myUrl;
     }
-
 }

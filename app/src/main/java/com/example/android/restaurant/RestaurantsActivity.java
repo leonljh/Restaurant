@@ -38,6 +38,7 @@ public class RestaurantsActivity extends AppCompatActivity {
     private String myUrl;
     private String jsonString;
     private String randomResultantRestaurant, randomResultantRestaurantId;
+    private double randomRestaurantLat, randomRestaurantLng;
     private Button randomizeButton;
     private JSONObject jsonObject;
     private List<Restaurant> listOfRestaurant;
@@ -45,6 +46,8 @@ public class RestaurantsActivity extends AppCompatActivity {
     private ContentLoadingProgressBar contentLoadingProgressBar;
     static final String RESTAURANT_ID_KEY = "restaurant_id_key";
     static final String RESTAURANT_NAME_KEY = "restaurant_name_key";
+    static final String RESTAURANT_LAT = "latitude";
+    static final String RESTAURANT_LNG = "longitude";
 
 
     @Override
@@ -57,7 +60,7 @@ public class RestaurantsActivity extends AppCompatActivity {
         listOfRestaurant = new ArrayList<>();
 
         //setup viewmodel in this activity to pass data between fragment and activity
-        ViewModelProviders.of(this).get(RestaurantViewModel.class);
+
 
 
         //Getting myUrl string from previous activity
@@ -94,11 +97,12 @@ public class RestaurantsActivity extends AppCompatActivity {
                     Bundle args = new Bundle();
                     args.putString(RESTAURANT_ID_KEY,randomResultantRestaurantId);
                     args.putString(RESTAURANT_NAME_KEY,randomResultantRestaurant);
+                    args.putDouble(RESTAURANT_LAT, randomRestaurantLat);
+                    args.putDouble(RESTAURANT_LNG, randomRestaurantLng);
                     resultsFragment.setArguments(args);
                     resultsFragment.show(getSupportFragmentManager(),"My Fragment");
             }
         });
-
     }
 
     private void getJson(String urlString) {
@@ -152,8 +156,18 @@ public class RestaurantsActivity extends AppCompatActivity {
                                 restaurantId = res.getString("place_id");
                             }
 
+                            double restaurantLat = 0;
+                            if(res.has("geometry")){
+                                restaurantLat = res.getJSONObject("geometry").getJSONObject("location").getDouble("lat");
+                            }
+
+                            double restaurantLng = 0;
+                            if(res.has("geometry")){
+                                restaurantLng = res.getJSONObject("geometry").getJSONObject("location").getDouble("lng");
+                            }
+
                             Restaurant restaurant = new Restaurant(restaurantName, restaurantRating,
-                                    restaurantUserRatings, restaurantPrice, restaurantId);
+                                    restaurantUserRatings, restaurantPrice, restaurantId, restaurantLat , restaurantLng);
                             listOfRestaurant.add(restaurant);
                         }
 
@@ -213,6 +227,8 @@ public class RestaurantsActivity extends AppCompatActivity {
             int randomRestaurantId = random.nextInt(max);
             randomResultantRestaurant = listOfRestaurant.get(randomRestaurantId).getName();
             randomResultantRestaurantId = listOfRestaurant.get(randomRestaurantId).getRestaurantId();
+            randomRestaurantLat = listOfRestaurant.get(randomRestaurantId).getLat();
+            randomRestaurantLng = listOfRestaurant.get(randomRestaurantId).getLng();
 
             Log.i("RestaurantFrag", randomResultantRestaurantId.toString() + randomResultantRestaurant);
         }

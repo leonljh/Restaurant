@@ -2,12 +2,14 @@ package com.example.android.restaurant.model;
 
 public class Restaurant {
 
-    public Restaurant(String name, double rating, double userRatings, int price, String restaurantId) {
+    public Restaurant(String name, double rating, double userRatings, int price, String restaurantId, double lat, double lng) {
         this.name = name;
         this.rating = rating;
         this.userRatings = userRatings;
         this.price = price;
         this.restaurantId = restaurantId;
+        this.lat = lat;
+        this.lng = lng;
     }
 
     @Override
@@ -60,10 +62,12 @@ public class Restaurant {
         this.restaurantId = restaurantId;
     }
 
+    public Double getLat() {return this.lat;}
+
+    public Double getLng() {return this.lng;}
 
     private String name;
-    private double rating;
-    private double userRatings;
+    private double userRatings, lat, lng, rating;
     private int price;
     private String restaurantId;
 
