@@ -82,42 +82,6 @@ public class ResultsFragment extends DialogFragment {
         Log.i("Within Fragment", randomedRestaurant + " " + randomedRestaurantPlaceId + " " + randomedRestaurantLat + " " + randomedRestaurantLng );
     }
 
-
-    //We have to get the current location from fusedLocationProviderClient as you never know, the user
-    //is probably on the move while searching for restaurant.
-//    private void getCurrentLocationFragment() {
-//        fusedLocationProviderClient = LocationServices
-//                .getFusedLocationProviderClient(getActivity());
-//        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) !=
-//                PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//            return;
-//        }
-//        Task<Location> locationResult =  fusedLocationProviderClient.getLastLocation();
-//        locationResult.addOnCompleteListener(getActivity(), new OnCompleteListener<Location>() {
-//
-//            @Override
-//            public void onComplete(@NonNull Task<Location> task) {
-//                if(task.isSuccessful()) {
-//                    currentLocation = task.getResult();
-//                    if(currentLocation != null){
-//                        LatLng location = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
-//                        Log.i("Fragment Location Chk", location.toString());
-//
-//                        Geocoder geocoder = new Geocoder(getActivity());
-//                        try {
-//                            List<Address> addresses = geocoder.getFromLocation(currentLocation.getLatitude(),currentLocation.getLongitude(),1);
-//                            currentLocationPostalCode = addresses.get(0).getPostalCode();
-//                            Log.i("AutocompleteFrag Test", currentLocationPostalCode);
-//                            getUrlForJSON();
-//                        } catch (IOException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-//                }
-//            };
-//        });
-//    }
-
     private String getUrlForJSON(){
         //google.navigation:q=latitude,longitude
         myUrl = "google.navigation:q="+randomedRestaurantLat+","+randomedRestaurantLng+"&mode=w";

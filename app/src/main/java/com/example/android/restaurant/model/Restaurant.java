@@ -16,9 +16,6 @@ public class Restaurant {
     public String toString() {
         return "Restaurant{" +
                 "name='" + name + '\'' +
-                ", rating=" + rating +
-                ", userRatings=" + userRatings +
-                ", price=" + price +
                 '}';
     }
 

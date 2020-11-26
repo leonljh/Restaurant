@@ -60,6 +60,13 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Re
             String restaurant = myRestaurants.get(position).getName();
             holder.restaurantName.setText(restaurant);
 
+            holder.restaurantName.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    onItemClicked.onItemClick(position);
+                }
+            });
+
     }
 
     @Override
@@ -71,5 +78,16 @@ public class RestaurantAdapter extends RecyclerView.Adapter<RestaurantAdapter.Re
     public int getItemViewType(int position) {
         //this adds button to the first position of the recycler view
         return R.layout.restaurant_list_item;
+    }
+
+    //set restaurant method
+    private OnItemClicked onItemClicked;
+
+    public interface OnItemClicked {
+        void onItemClick(int position);
+    }
+
+    public void setOnClick(OnItemClicked onClick){
+        this.onItemClicked = onClick;
     }
 }

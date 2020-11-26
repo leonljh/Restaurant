@@ -1,5 +1,6 @@
 package com.example.android.restaurant;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.widget.ContentLoadingProgressBar;
 import androidx.lifecycle.ViewModelProviders;
@@ -7,9 +8,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -33,12 +37,12 @@ import java.util.Random;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class RestaurantsActivity extends AppCompatActivity {
+public class RestaurantsActivity extends AppCompatActivity implements RestaurantAdapter.OnItemClicked {
 
-    private String myUrl;
-    private String jsonString;
-    private String randomResultantRestaurant, randomResultantRestaurantId;
+    private String randomResultantRestaurant, randomResultantRestaurantId, token, jsonString, myUrl, nextPageUrl;
     private double randomRestaurantLat, randomRestaurantLng;
+    private boolean isUrlLoaded = false;
+    private boolean alreadyExecuted = false;
     private Button randomizeButton;
     private JSONObject jsonObject;
     private List<Restaurant> listOfRestaurant;
@@ -49,7 +53,6 @@ public class RestaurantsActivity extends AppCompatActivity {
     static final String RESTAURANT_LAT = "latitude";
     static final String RESTAURANT_LNG = "longitude";
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,10 +61,6 @@ public class RestaurantsActivity extends AppCompatActivity {
         contentLoadingProgressBar = (ContentLoadingProgressBar) findViewById(R.id.finding_restaurants);
         randomizeButton = (Button) findViewById(R.id.button_random);
         listOfRestaurant = new ArrayList<>();
-
-        //setup viewmodel in this activity to pass data between fragment and activity
-
-
 
         //Getting myUrl string from previous activity
         Intent intent = getIntent();
@@ -86,6 +85,35 @@ public class RestaurantsActivity extends AppCompatActivity {
         RestaurantAdapter restaurantAdapter = new RestaurantAdapter(listOfRestaurant);
         mRecyclerView.setAdapter(restaurantAdapter);
 
+        //loads more data once scrolled finish
+        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                    if(dy > 0){
+                        //build url with token
+                        //parse new json file and get new results
+                        //add to the list of restaurants
+                       if(!isUrlLoaded){
+                           nextPageUrlBuilder();
+                           isUrlLoaded = true;
+                       }
+                       else{
+                           //thread and parse the json file
+                           //add it to the current list of restaurants
+                           //remember to reset url once finished.
+                           if(!alreadyExecuted) {
+                               getAdditionalJson(nextPageUrl); //how to make this call once
+                               alreadyExecuted = true;
+                           }
+                       }
+                    }
+            }
+        });
+
+        //Set ClickListener for each view in Recyclerview
+        restaurantAdapter.setOnClick(RestaurantsActivity.this);
         randomizeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -105,106 +133,121 @@ public class RestaurantsActivity extends AppCompatActivity {
         });
     }
 
-    private void getJson(String urlString) {
-        //get JSON file from URL for parsing
-        com.example.android.todolist.AppExecutors.getInstance().networkIO().execute(new Runnable() {
-            @Override
-            public void run() {
-                HttpsURLConnection con = null;
-                try {
-                    URL u = new URL(urlString);
-                    con = (HttpsURLConnection) u.openConnection();
-
-                    con.connect();
-
-                    BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-
-                    while ((line = br.readLine()) != null) {
-                        sb.append(line + "\n");
-                    }
-                    br.close();
-                    jsonString = sb.toString();
-
-                    try {
-                        jsonObject = new JSONObject(jsonString);
-                        JSONArray arr = jsonObject.getJSONArray("results");
-
-                        for (int i=0; i < arr.length(); i++) {
-                            JSONObject res = arr.getJSONObject(i);
-
-                            String restaurantName = res.getString("name");
-
-                            double restaurantRating = -3;
-                            if(res.has("rating")){
-                                restaurantRating = res.getDouble("rating");
-                            }
-
-                            double restaurantUserRatings = -1;
-                            if(res.has("user_ratings_total")) {
-                                 restaurantUserRatings = res.getDouble("user_ratings_total");
-                            }
-
-                            int restaurantPrice = -1;
-                            if(res.has("price_level")) {
-                                restaurantPrice = res.getInt("price_level");
-                            }
-
-                            String restaurantId = "";
-                            if(res.has("place_id")){
-                                restaurantId = res.getString("place_id");
-                            }
-
-                            double restaurantLat = 0;
-                            if(res.has("geometry")){
-                                restaurantLat = res.getJSONObject("geometry").getJSONObject("location").getDouble("lat");
-                            }
-
-                            double restaurantLng = 0;
-                            if(res.has("geometry")){
-                                restaurantLng = res.getJSONObject("geometry").getJSONObject("location").getDouble("lng");
-                            }
-
-                            Restaurant restaurant = new Restaurant(restaurantName, restaurantRating,
-                                    restaurantUserRatings, restaurantPrice, restaurantId, restaurantLat , restaurantLng);
-                            listOfRestaurant.add(restaurant);
-                        }
-
-                        Log.i("Restaurant List Success", listOfRestaurant.toString());
-
-
-                        //Log success, then open recyclerview
-                        runOnUiThread(new Runnable() {
-
-                            @Override
-                            public void run() {
-                                setmRecyclerView();
-                                mRecyclerView.getAdapter().notifyItemRangeInserted(0, listOfRestaurant.size()-1);
-                            }
-                        });
-
-                    } catch (JSONException j){
-                        j.printStackTrace();
-                        Log.e("JSON", "JSON Creation Error");
-                    }
-                } catch (MalformedURLException ex) {
-                    ex.printStackTrace();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                } finally {
-                    if (con != null) {
-                        try {
-                            con.disconnect();
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        }
-                    }
-                }
-                return;
-                }
-            });
+        @Override
+        public void onItemClick(int position) {
+            String myUrl = "google.navigation:q="+listOfRestaurant.get(position).getLat()+","+listOfRestaurant.get(position).getLng()+"&mode=w";
+            Uri gmmIntentUri = Uri.parse(myUrl);
+            Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+            mapIntent.setPackage("com.google.android.apps.maps");
+            startActivity(mapIntent);
         }
+
+        private void getJson(String urlString) {
+            //get JSON file from URL for parsing
+            com.example.android.todolist.AppExecutors.getInstance().networkIO().execute(new Runnable() {
+                @Override
+                public void run() {
+                    HttpsURLConnection con = null;
+                    try {
+                        URL u = new URL(urlString);
+                        con = (HttpsURLConnection) u.openConnection();
+
+                        con.connect();
+
+                        BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+
+                        while ((line = br.readLine()) != null) {
+                            sb.append(line + "\n");
+                        }
+                        br.close();
+                        jsonString = sb.toString();
+
+                        try {
+
+                            jsonObject = new JSONObject(jsonString);
+
+                            //collect next_page_token
+                            token = jsonObject.getString("next_page_token");
+
+                            //parsing JSON data
+                            JSONArray arr = jsonObject.getJSONArray("results");
+
+                            for (int i=0; i < arr.length(); i++) {
+                                JSONObject res = arr.getJSONObject(i);
+
+                                String restaurantName = res.getString("name");
+
+                                double restaurantRating = -3;
+                                if(res.has("rating")){
+                                    restaurantRating = res.getDouble("rating");
+                                }
+
+                                double restaurantUserRatings = -1;
+                                if(res.has("user_ratings_total")) {
+                                     restaurantUserRatings = res.getDouble("user_ratings_total");
+                                }
+
+                                int restaurantPrice = -1;
+                                if(res.has("price_level")) {
+                                    restaurantPrice = res.getInt("price_level");
+                                }
+
+                                String restaurantId = "";
+                                if(res.has("place_id")){
+                                    restaurantId = res.getString("place_id");
+                                }
+
+                                double restaurantLat = 0;
+                                if(res.has("geometry")){
+                                    restaurantLat = res.getJSONObject("geometry").getJSONObject("location").getDouble("lat");
+                                }
+
+                                double restaurantLng = 0;
+                                if(res.has("geometry")){
+                                    restaurantLng = res.getJSONObject("geometry").getJSONObject("location").getDouble("lng");
+                                }
+
+                                Restaurant restaurant = new Restaurant(restaurantName, restaurantRating,
+                                        restaurantUserRatings, restaurantPrice, restaurantId, restaurantLat , restaurantLng);
+                                listOfRestaurant.add(restaurant);
+                            }
+
+                            Log.i("Restaurant Success1", listOfRestaurant.toString());
+
+
+                            //Log success, then open recyclerview
+                            runOnUiThread(new Runnable() {
+
+                                @Override
+                                public void run() {
+                                    setmRecyclerView();
+                                    mRecyclerView.getAdapter().notifyItemRangeInserted(0, listOfRestaurant.size()-1);
+                                }
+                            });
+
+                        } catch (JSONException j){
+                            j.printStackTrace();
+                            Log.e("JSON", "JSON Creation Error");
+                        }
+                    } catch (MalformedURLException ex) {
+                        ex.printStackTrace();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    } finally {
+                        if (con != null) {
+                            try {
+                                con.disconnect();
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                    }
+                    return;
+                    }
+                });
+            }
 
         //while getting http request and parsing JSON, show loading bar
         public void setLoadingScreen(){
@@ -232,4 +275,116 @@ public class RestaurantsActivity extends AppCompatActivity {
 
             Log.i("RestaurantFrag", randomResultantRestaurantId.toString() + randomResultantRestaurant);
         }
-    }
+
+        private void nextPageUrlBuilder(){
+
+            Uri.Builder builder = new Uri.Builder();
+            builder.scheme("https")
+                    .authority("maps.googleapis.com")
+                    .appendPath("maps")
+                    .appendPath("api")
+                    .appendPath("place")
+                    .appendPath("nearbysearch")
+                    .appendPath("json")
+                    .appendQueryParameter("pagetoken",token)
+                    .appendQueryParameter("key",getResources().getString(R.string.google_maps_key));
+
+            nextPageUrl = builder.build().toString();
+            Log.i("Loading Next Page...", nextPageUrl);
+        }
+
+        private void getAdditionalJson(String url){
+            com.example.android.todolist.AppExecutors.getInstance().networkIO().execute(new Runnable() {
+                @Override
+                public void run() {
+                    HttpsURLConnection con = null;
+                    try {
+                        URL u = new URL(url);
+                        con = (HttpsURLConnection) u.openConnection();
+
+                        con.connect();
+
+                        BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+
+                        while ((line = br.readLine()) != null) {
+                            sb.append(line + "\n");
+                        }
+                        br.close();
+                        jsonString = sb.toString();
+
+                        try {
+
+                            jsonObject = new JSONObject(jsonString);
+
+                            //collect next_page_token
+                            //token = jsonObject.getString("next_page_token");
+
+                            //parsing JSON data
+                            JSONArray arr = jsonObject.getJSONArray("results");
+
+                            for (int i=0; i < arr.length(); i++) {
+                                JSONObject res = arr.getJSONObject(i);
+
+                                String restaurantName = res.getString("name");
+
+                                double restaurantRating = -3;
+                                if(res.has("rating")){
+                                    restaurantRating = res.getDouble("rating");
+                                }
+
+                                double restaurantUserRatings = -1;
+                                if(res.has("user_ratings_total")) {
+                                    restaurantUserRatings = res.getDouble("user_ratings_total");
+                                }
+
+                                int restaurantPrice = -1;
+                                if(res.has("price_level")) {
+                                    restaurantPrice = res.getInt("price_level");
+                                }
+
+                                String restaurantId = "";
+                                if(res.has("place_id")){
+                                    restaurantId = res.getString("place_id");
+                                }
+
+                                double restaurantLat = 0;
+                                if(res.has("geometry")){
+                                    restaurantLat = res.getJSONObject("geometry").getJSONObject("location").getDouble("lat");
+                                }
+
+                                double restaurantLng = 0;
+                                if(res.has("geometry")){
+                                    restaurantLng = res.getJSONObject("geometry").getJSONObject("location").getDouble("lng");
+                                }
+
+                                Restaurant restaurant = new Restaurant(restaurantName, restaurantRating,
+                                        restaurantUserRatings, restaurantPrice, restaurantId, restaurantLat , restaurantLng);
+                                listOfRestaurant.add(restaurant);
+                            }
+                            Log.i("Restaurant List Size", String.valueOf(listOfRestaurant.size()));
+                            Log.i("Restaurant List Size", listOfRestaurant.toString());
+
+                        } catch (JSONException j){
+                            j.printStackTrace();
+                            Log.e("JSON", "JSON Creation Error");
+                        }
+                    } catch (MalformedURLException ex) {
+                        ex.printStackTrace();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    } finally {
+                        if (con != null) {
+                            try {
+                                con.disconnect();
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                    }
+                    return;
+                }
+            });
+        }
+}
